@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 concurrency:
   group: mts-local-k8s-deployment
@@ -18,7 +19,8 @@ jobs:
     runs-on: [self-hosted, linux, x64]
 
     env:
-      IMAGE: mts-demo:${{ github.sha }}
+      IMAGE: ghcr.io/malli2/local-deployment-py:${{ github.sha }}
+      IMAGE_LATEST: ghcr.io/malli2/local-deployment-py:latest
 
     steps:
       - name: Checkout
@@ -37,8 +39,23 @@ jobs:
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build Docker image
-        run: docker build -t "$IMAGE" .
+        run: |
+          set -e
+          docker build -t "$IMAGE" -t "$IMAGE_LATEST" .
+
+      - name: Push Docker image to GHCR
+        run: |
+          set -e
+          docker push "$IMAGE"
+          docker push "$IMAGE_LATEST"
 
       - name: Deploy to Docker Desktop Kubernetes
         run: |
@@ -60,4 +77,3 @@ jobs:
           curl --fail http://127.0.0.1:30080/health
           curl --fail http://127.0.0.1:30080/api/v1/status
           echo "Application: http://localhost:30080"
-
