@@ -1,0 +1,72 @@
+name: MTS Local Kubernetes CI-CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mts-local-k8s-deployment
+  cancel-in-progress: false
+
+jobs:
+  build-test-deploy:
+    runs-on: [self-hosted, linux, x64]
+    env:
+      IMAGE: mts-demo:${{ github.sha }}
+      KIND_CLUSTER: desktop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Verify tools and cluster
+        run: |
+          set -e
+          docker version
+          kubectl version --client
+          kind version
+          python3 --version
+          echo "Docker context: $(docker context show)"
+          echo "Kubernetes context: $(kubectl config current-context)"
+          kind get clusters
+          kubectl get nodes
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Build container image
+        run: docker build --pull -t "$IMAGE" .
+
+      - name: Load image into existing kind cluster
+        run: |
+          set -e
+          if ! kind get clusters | grep -Fxq "$KIND_CLUSTER"; then
+            echo "kind cluster '$KIND_CLUSTER' not found. Check 'kind get clusters' and update KIND_CLUSTER."
+            exit 1
+          fi
+          kind load docker-image "$IMAGE" --name "$KIND_CLUSTER"
+
+      - name: Deploy to Kubernetes
+        run: |
+          set -e
+          kubectl apply -f k8s/
+          kubectl set image deployment/mts-demo app="$IMAGE"
+          kubectl rollout status deployment/mts-demo --timeout=180s
+          kubectl get deployment,pods,service -l app=mts-demo
+
+      - name: Expose service on WSL localhost
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/start-port-forward.sh
+
+      - name: Verify API
+        run: |
+          set -e
+          curl --fail http://127.0.0.1:30080/
+          curl --fail http://127.0.0.1:30080/health
+          curl --fail http://127.0.0.1:30080/api/v1/status
+          echo "Open from Windows: http://localhost:30080"
