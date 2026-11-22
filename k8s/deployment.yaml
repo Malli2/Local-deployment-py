@@ -14,10 +14,12 @@ spec:
       labels:
         app: mts-demo
     spec:
+    imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: app
-          image: mts-demo:dev
-          imagePullPolicy: Never
+          image: ghcr.io/malli2/local-deployment-py:latest
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
