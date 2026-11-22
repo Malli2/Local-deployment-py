@@ -1,0 +1,39 @@
+
+name: Self Hosted Runner Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Identify runner
+        run: |
+          echo "Hello from Malli's Ubuntu runner"
+          hostname
+          whoami
+          uname -a
+
+      - name: Test Docker
+        run: |
+          docker version
+          docker run --rm hello-world
+
+      - name: Test Kubernetes
+        run: |
+          kubectl config current-context
+          kubectl get nodes
+          kubectl get pods -A
+
+      - name: Success
+        run: echo "Self-hosted runner is working!"
