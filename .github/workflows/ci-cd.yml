@@ -3,7 +3,7 @@ name: MTS Local Kubernetes CI-CD
 
 on:
   push:
-    branches: [devlop]
+    branches: [develop]
   workflow_dispatch:
 
 permissions:

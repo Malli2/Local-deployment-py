@@ -1,11 +1,14 @@
-import json, os, sys, threading, unittest
-from urllib.request import urlopen
+import json
+import threading
+import unittest
 from http.server import ThreadingHTTPServer
+from urllib.request import urlopen
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
-from app import Handler
+from app.app import Handler
+
 
 class ApiTests(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
@@ -31,6 +34,7 @@ class ApiTests(unittest.TestCase):
     def test_status(self):
         with urlopen(self.base + "/api/v1/status") as r:
             self.assertEqual(json.loads(r.read())["status"], "running")
+
 
 if __name__ == "__main__":
     unittest.main()

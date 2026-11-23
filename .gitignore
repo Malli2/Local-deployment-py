@@ -1,12 +1,18 @@
-cat > .gitignore <<'EOF'
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 .venv/
 venv/
+build/
+dist/
+*.egg-info/
 
 # Environment variables and secrets
 .env
@@ -23,4 +29,3 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
-EOF
